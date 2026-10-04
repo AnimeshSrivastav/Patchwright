@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  # Langfuse: tracing and observability UI
+  langfuse-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+    volumes:
+      - langfuse_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  langfuse:
+    image: langfuse/langfuse:latest
+    restart: unless-stopped
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"   # Langfuse UI
+      - "4318:4318"   # OTLP HTTP endpoint (for OTel traces)
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-db/langfuse
+      NEXTAUTH_SECRET: change-me-in-production
+      NEXTAUTH_URL: http://localhost:3000
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+
+  # Sandbox base image — built once, used per-incident
+  # Not a running service; just here so `docker compose build sandbox` works
+  sandbox-base:
+    build:
+      context: .
+      dockerfile: autofix/sandbox/Dockerfile
+    image: patchwright-sandbox:latest
+    command: ["echo", "Sandbox image built successfully"]
+    profiles:
+      - build-only  # Only built explicitly, never started
+
+volumes:
+  langfuse_db_data:

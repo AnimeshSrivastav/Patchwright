@@ -38,3 +38,21 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# ADK
+.adk/
+patchwright/.env
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Generated eval reports
+evals/reports/*.md
+evals/reports/*.json
+!evals/reports/.gitkeep
+
+# Sandbox temp clones
+patchwright_clone_*/
+patchwright_mock_*/
